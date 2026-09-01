@@ -1,0 +1,57 @@
+# Every option quartocourse understands, with its default where there is one.
+# Only [course] title and an existing notebooks directory are required.
+#
+# All relative paths resolve against this file.
+
+[course]
+title = "Introduction to Data Science"
+code = "ABC101"
+author = "A. Lecturer"
+institution = "Example University"
+
+[source]
+notebooks = "notebooks"
+# Optional. Setting these enables the GitHub and Colab links in the slide
+# footer and the PDF page footer; the ref pins those links to a tag or branch.
+repo = "https://github.com/example/abc101-notebooks"
+ref = "main"
+
+[output]
+slides = "build/slides"
+notes = "build/notes"
+
+# Optional. Omit the block entirely for a neutral default deck.
+[brand]
+# A CSS font stack for the slides.
+font = '"Example Sans", sans-serif'
+# One Typst family name for the PDF. Typst takes a single family, not a stack.
+# Leave unset to keep Quarto's default -- useful when the brand font is
+# licensed and will not be installed on every machine that builds the notes.
+pdf_font = "Example Sans"
+accent = "#1f3a5f"
+body_font_size = "32px"
+# Extra stylesheets, layered after the built-in one.
+css = []
+
+# Optional. Honour nbconvert slideshow metadata; on by default, and a no-op
+# for notebooks that carry none. See the README.
+[compat]
+slide_type = true
+
+[render]
+# Some hosts refuse image downloads without a User-Agent and return a
+# rate-limit page, which Quarto will save as though it were the image.
+user_agent = "Mozilla/5.0 (compatible; quartocourse/1.0)"
+# Fixed version string for the slide footer. Unset derives one from the date
+# and the notebooks repository's short commit SHA.
+# version = "v1.0.0"
+
+# For notebooks that reference assets by their published URL: rewrite the
+# prefix to a notebook-relative path, and mount the local directory it should
+# resolve against. Commented out because a mount must point at a directory
+# that exists -- quartocourse checks, rather than failing later inside Quarto.
+# [render.url_rewrites]
+# "https://example.edu/courses/abc101/" = "_local/"
+#
+# [render.mounts]
+# _local = "../static/courses/abc101"

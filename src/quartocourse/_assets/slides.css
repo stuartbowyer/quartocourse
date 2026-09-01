@@ -1,0 +1,207 @@
+/* Default styling for reveal.js decks rendered by quartocourse.
+   Brand-neutral: every institution-specific value is a custom property,
+   overridden by a generated stylesheet loaded after this one (see
+   metadata.build_brand_css). Editing values here changes the defaults for
+   courses that set no [brand] block. */
+
+:root {
+  --qc-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --qc-accent: #1f3a5f;
+  --qc-body-size: 32px;
+  --qc-code-bg: #f4f4f6;
+  --qc-code-border: #e0e0e6;
+  --qc-output-bg: #ffffff;
+  --qc-output-border: #d8d8de;
+}
+
+.reveal,
+.reveal h1,
+.reveal h2,
+.reveal h3,
+.reveal h4,
+.reveal h5,
+.reveal h6,
+.reveal p,
+.reveal li,
+.reveal td,
+.reveal th {
+  font-family: var(--qc-font) !important;
+}
+
+/* Quarto's default body type is sized for Source Sans Pro. A brand font with
+   a larger apparent x-height reads as oversized at the same em, so the size
+   is a knob rather than a constant. */
+.reveal {
+  font-size: var(--qc-body-size);
+}
+
+.reveal h1,
+.reveal h2,
+.reveal h3,
+.reveal h4,
+.reveal h5,
+.reveal h6 {
+  color: var(--qc-accent) !important;
+  font-weight: bold !important;
+}
+
+/* reveal-title-slide.lua reshuffles the title cell so the first H1 keeps its
+   section role (H2 children nest in the outline) and the logo / subtitle
+   lines live inside the title-slide section. DOM order is
+   H1 -> image-paragraph -> subtitle-divs; flex order renders the image on
+   top, title beneath, subtitles below.
+
+   These reorder rules must apply ONLY to the cover slide. Quarto tags every
+   level-1 heading slide with `title-slide slide level1`, so we cannot key
+   off the class. The cover is the only slide carrying .title-subtitle divs,
+   so :has() scopes us to it and leaves ordinary `# Section` divider slides
+   in their natural title-on-top order. */
+.reveal section.slide.level1:has(.title-subtitle) {
+  display: flex !important;
+  flex-direction: column;
+  justify-content: center;
+}
+.reveal section.slide.level1:has(.title-subtitle) > * {
+  order: 9;
+}
+.reveal section.slide.level1:has(.title-subtitle) > p {
+  order: 1;
+  margin: 0.5em 0;
+}
+.reveal section.slide.level1:has(.title-subtitle) > h1 {
+  order: 2;
+}
+.reveal section.slide.level1:has(.title-subtitle) > .title-subtitle {
+  order: 3;
+}
+
+/* The H3 subtitle lines were rewritten to
+   <div.title-subtitle><p><strong>...</strong></p></div> by the filter.
+   Style them back to a subtitle look. */
+.reveal .title-subtitle p {
+  font-size: 1.3em !important;
+  color: var(--qc-accent) !important;
+  margin: 0.25em 0 !important;
+  font-weight: bold;
+}
+
+/* Quarto's default list spacing leaves too much air for a lecture deck. */
+.reveal ul,
+.reveal ol {
+  padding-left: 1em !important;
+  margin-left: 0.5em !important;
+}
+.reveal li {
+  margin-bottom: 0.5em;
+}
+
+/* Tables: top-align cells, shrink relative to body, and kill the paragraph
+   margins Quarto adds inside td/th. */
+.reveal table {
+  font-size: 0.75em;
+}
+.reveal td,
+.reveal th {
+  vertical-align: top !important;
+}
+.reveal td p,
+.reveal th p,
+.reveal td img {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Code blocks: Quarto leaves <pre> transparent, which reads as body text. */
+.reveal pre,
+.reveal pre code {
+  background-color: var(--qc-code-bg) !important;
+  border: 1px solid var(--qc-code-border);
+  border-radius: 4px;
+  padding: 0.6em 0.8em;
+}
+.reveal pre code {
+  border: none;
+  padding: 0;
+}
+
+/* Input (.sourceCode/.cell-code) and output (.cell-output) cells sit in
+   different wrappers, and the default sizing leaves the output <pre> shrunk
+   to its content while the input stretches. Force both to span the parent so
+   they align edge to edge. */
+.reveal .cell,
+.reveal .cell > .sourceCode,
+.reveal .cell > .cell-output,
+.reveal .cell pre {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Distinguish code input from output: input keeps the grey block above,
+   output goes white with an accent rule so it reads as a result. */
+.reveal .cell-output pre,
+.reveal .cell-output pre code {
+  background-color: var(--qc-output-bg) !important;
+}
+.reveal .cell-output pre {
+  border-color: var(--qc-output-border);
+  border-left: 4px solid var(--qc-accent);
+}
+
+/* Inline code -- a shade off the block background so it reads as inline. */
+.reveal code:not(pre code) {
+  background-color: var(--qc-code-bg);
+  padding: 0.1em 0.35em;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+/* Footer: four-column flex layout. render.slides_footer emits one
+   <span class="col..."> per column; Quarto wraps the string in a <p>, so the
+   flex layout has to sit on .footer p rather than .footer itself.
+
+   The footer must fit the slide width without clipping. Reveal puts a menu
+   button at bottom-left (~50px) and a slide-number badge at bottom-right
+   (~50px), so inset enough to clear both. */
+.reveal .footer {
+  color: var(--qc-accent);
+  font-family: var(--qc-font);
+  font-size: 0.5em;
+  left: 60px !important;
+  right: 80px !important;
+  bottom: 5px !important;
+  width: auto !important;
+}
+.reveal .footer p {
+  display: flex !important;
+  align-items: baseline;
+  margin: 0;
+  gap: 12px;
+}
+.reveal .footer .col {
+  white-space: nowrap;
+}
+.reveal .footer .col:nth-child(2) {
+  /* The author/code/title/lecture column is the longest -- let it shrink and
+     ellipsis if the deck title pushes things over the edge. The padding gives
+     the trailing italic notebook name room for its slant; without it the last
+     letter clips against `overflow: hidden`. */
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: 0.25em;
+}
+.reveal .footer .col-version {
+  font-size: 0.85em;
+  opacity: 0.7;
+  margin-left: auto;
+}
+.reveal .footer .col-colab {
+  flex-shrink: 0;
+}
+.reveal .footer .col-colab img {
+  height: 18px;
+  vertical-align: middle;
+}
