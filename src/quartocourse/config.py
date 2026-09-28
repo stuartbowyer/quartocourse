@@ -9,6 +9,7 @@ a course is relocatable.
 """
 from __future__ import annotations
 
+import subprocess
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -43,6 +44,9 @@ class Source:
     notebooks: Path
     repo: str = ""
     ref: str = "main"
+    # Path of `notebooks` within its git repo ("" at the root, else ending
+    # in "/"), so repo links resolve when notebooks live in a subdirectory.
+    repo_prefix: str = ""
 
 
 @dataclass(frozen=True)
@@ -112,7 +116,8 @@ class Config:
         if not self.source.repo:
             return ""
         base = self.source.repo.rstrip("/").removesuffix(".git")
-        return f"{base}/blob/{self.source.ref}/{notebook_filename}"
+        path = f"{self.source.repo_prefix}{notebook_filename}"
+        return f"{base}/blob/{self.source.ref}/{path}"
 
     def colab_url(self, notebook_filename: str) -> str:
         url = self.github_url(notebook_filename)
@@ -125,6 +130,21 @@ def _require(table: dict, key: str, where: str):
     if key not in table or table[key] in (None, ""):
         raise ConfigError(f"{where}: missing required key '{key}'")
     return table[key]
+
+
+def _repo_prefix(directory: Path) -> str:
+    """`directory`'s path within its git repo; "" if at the root or not in git."""
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "--show-prefix"],
+            cwd=directory,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+    return out.stdout.strip() if out.returncode == 0 else ""
 
 
 def resolve_config_path(target: Path) -> Path:
@@ -166,10 +186,12 @@ def load(target: Path) -> Config:
             f"{path} [source]: notebooks directory not found: {notebooks}\n"
             "  (if it is a git submodule, run: git submodule update --init)"
         )
+    repo = source_t.get("repo", "")
     source = Source(
         notebooks=notebooks,
-        repo=source_t.get("repo", ""),
+        repo=repo,
         ref=source_t.get("ref", "main"),
+        repo_prefix=_repo_prefix(notebooks) if repo else "",
     )
 
     output_t = raw.get("output", {})

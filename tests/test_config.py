@@ -1,3 +1,6 @@
+import shutil
+import subprocess
+
 import pytest
 
 from quartocourse import config
@@ -67,3 +70,11 @@ class TestUrls:
         cfg = config.load(_write(tmp_path, MINIMAL))
         assert cfg.github_url("L1.ipynb") == ""
         assert cfg.colab_url("L1.ipynb") == ""
+
+    @pytest.mark.skipif(shutil.which("git") is None, reason="needs git")
+    def test_notebooks_in_a_repo_subdirectory(self, tmp_path):
+        subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+        cfg = self._cfg(tmp_path, "https://github.com/u/r")
+        assert cfg.github_url("L1.ipynb") == (
+            "https://github.com/u/r/blob/main/notebooks/L1.ipynb"
+        )
