@@ -51,12 +51,12 @@ class TestForFormat:
     def test_show_on_click_is_a_fragment_in_the_slides(self):
         cell = for_format(notebook(code("x", [SHOW_ON_CLICK])), True)["cells"][0]
         assert cell["outputs"]
-        assert cell["source"].startswith("#| output-location: fragment\n")
+        assert cell["source"][0] == "#| output-location: fragment\n"
 
     def test_show_on_click_is_hidden_in_the_notes(self):
         cell = for_format(notebook(code("x", [SHOW_ON_CLICK])), False)["cells"][0]
         assert cell["outputs"] == []
-        assert "output-location" not in cell["source"]
+        assert "output-location" not in "".join(cell["source"])
 
     def test_markdown_is_untouched(self):
         md = {"cell_type": "markdown", "metadata": {}, "source": "# Hi"}
@@ -148,6 +148,10 @@ class TestExecuteNotebook:
     def test_accepts_list_of_lines_sources(self, tmp_path):
         out = self._run(tmp_path, (["x = 6\n", "print(x * 7)"], [SHOW]))
         assert out["cells"][0]["outputs"][0]["text"] == "42\n"
+
+    def test_returns_list_of_lines_sources(self, tmp_path):
+        out = self._run(tmp_path, ("x = 1\ny = 2", ()))
+        assert out["cells"][0]["source"] == ["x = 1\n", "y = 2"]
 
     def test_runs_in_the_given_directory(self, tmp_path):
         (tmp_path / "data.txt").write_text("hello")

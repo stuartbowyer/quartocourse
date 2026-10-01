@@ -49,6 +49,15 @@ def _source(cell: dict) -> str:
     return "".join(source) if isinstance(source, list) else source
 
 
+def _as_lines(text: str) -> list[str]:
+    """Source in the list-of-lines form saved notebooks use.
+
+    Quarto loses the line breaks of a single-string markdown source in some
+    notebooks (seen with Colab metadata), so nothing leaves this module as one.
+    """
+    return text.splitlines(keepends=True)
+
+
 def is_blank(cell: dict, blank: str) -> bool:
     return bool(blank) and cell.get("cell_type") == "code" and blank in _source(cell)
 
@@ -130,7 +139,10 @@ def execute_notebook(
         # Only ever needed for the run, so not left to reach the output.
         for cell in allowed:
             cell.metadata["tags"].remove(_RAISES)
-    return nbformat.from_dict(nb)
+    out = nbformat.from_dict(nb)
+    for cell in out.cells:
+        cell.source = _as_lines(cell.source)
+    return out
 
 
 def for_format(notebook: dict, slides: bool) -> dict:
@@ -149,7 +161,7 @@ def for_format(notebook: dict, slides: bool) -> dict:
             cell["outputs"] = []
             cell["execution_count"] = None
         elif SHOW_ON_CLICK in tags:
-            cell["source"] = _FRAGMENT_OPTION + _source(cell)
+            cell["source"] = _as_lines(_FRAGMENT_OPTION + _source(cell))
     return out
 
 
