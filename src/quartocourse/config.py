@@ -9,7 +9,9 @@ a course is relocatable.
 """
 from __future__ import annotations
 
+import re
 import subprocess
+import sys
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -89,6 +91,25 @@ class Render:
     # Name -> directory symlinked in beside the notebook, so the rewritten
     # relative paths above resolve to the working-tree copy.
     mounts: dict[str, Path] = field(default_factory=dict)
+    # Regexes that must not appear in any published output. Checked whether or
+    # not notebooks are executed; a match fails the render.
+    forbid: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class Execute:
+    # Run each notebook at render time and publish only the outputs of cells
+    # tagged `show` or `show-on-click` (see execute.py). Off renders the saved
+    # outputs as they are, and the tags are ignored.
+    enabled: bool = False
+    # Interpreter for the kernel; it needs ipykernel and the notebooks' own
+    # dependencies. Defaults to the interpreter running quartocourse.
+    python: Path = Path(sys.executable)
+    # Per cell, in seconds.
+    timeout: int = 600
+    # A code cell containing this is an exercise left blank for students: it
+    # may error, and its output is hidden unless tagged.
+    blank: str = "____"
 
 
 @dataclass(frozen=True)
@@ -109,6 +130,7 @@ class Config:
     output: Output
     brand: Brand
     render: Render
+    execute: Execute
     compat: Compat
 
     def github_url(self, notebook_filename: str) -> str:
@@ -218,7 +240,15 @@ def load(target: Path) -> Config:
         version=render_t.get("version", ""),
         url_rewrites=dict(render_t.get("url_rewrites", {})),
         mounts={k: rel(v) for k, v in render_t.get("mounts", {}).items()},
+        forbid=tuple(render_t.get("forbid", [])),
     )
+    for pattern in render.forbid:
+        try:
+            re.compile(pattern)
+        except re.error as exc:
+            raise ConfigError(
+                f"{path} [render]: forbid pattern {pattern!r} is invalid: {exc}"
+            ) from exc
     for name, target_dir in render.mounts.items():
         # The name becomes a symlink beside the staged notebook and a
         # directory swept from the output directory after each render, so
@@ -233,6 +263,23 @@ def load(target: Path) -> Config:
                 f"{path} [render.mounts]: '{name}' -> {target_dir} is not a directory"
             )
 
+    execute_t = raw.get("execute", {})
+    # Not resolved: a venv's bin/python is a symlink, and following it would
+    # start the base interpreter without the venv's packages.
+    python = Path(execute_t.get("python", Execute.python))
+    execute = Execute(
+        enabled=bool(execute_t.get("enabled", False)),
+        python=python if python.is_absolute() else root / python,
+        timeout=int(execute_t.get("timeout", Execute.timeout)),
+        blank=execute_t.get("blank", Execute.blank),
+    )
+    if execute.enabled and not execute.python.is_file():
+        raise ConfigError(
+            f"{path} [execute]: python interpreter not found: {execute.python}"
+        )
+    if execute.timeout <= 0:
+        raise ConfigError(f"{path} [execute]: timeout must be positive")
+
     compat_t = raw.get("compat", {})
     compat = Compat(slide_type=bool(compat_t.get("slide_type", True)))
 
@@ -244,6 +291,7 @@ def load(target: Path) -> Config:
         output=output,
         brand=brand,
         render=render,
+        execute=execute,
         compat=compat,
     )
 

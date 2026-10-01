@@ -78,3 +78,28 @@ class TestUrls:
         assert cfg.github_url("L1.ipynb") == (
             "https://github.com/u/r/blob/main/notebooks/L1.ipynb"
         )
+
+class TestExecute:
+    def test_off_by_default(self, tmp_path):
+        cfg = config.load(_write(tmp_path, MINIMAL))
+        assert cfg.execute.enabled is False
+        assert cfg.render.forbid == ()
+
+    def test_missing_interpreter_is_an_error_when_enabled(self, tmp_path):
+        body = MINIMAL + '\n[execute]\nenabled = true\npython = "nope/bin/python"\n'
+        with pytest.raises(config.ConfigError, match="python interpreter"):
+            config.load(_write(tmp_path, body))
+
+    def test_interpreter_path_keeps_its_symlink(self, tmp_path):
+        real = tmp_path / "real-python"
+        real.write_text("")
+        (tmp_path / "venv").mkdir()
+        (tmp_path / "venv" / "python").symlink_to(real)
+        body = MINIMAL + '\n[execute]\nenabled = true\npython = "venv/python"\n'
+        cfg = config.load(_write(tmp_path, body))
+        assert cfg.execute.python == tmp_path / "venv" / "python"
+
+    def test_invalid_forbid_pattern_is_an_error(self, tmp_path):
+        body = MINIMAL + '\n[render]\nforbid = ["("]\n'
+        with pytest.raises(config.ConfigError, match="forbid"):
+            config.load(_write(tmp_path, body))

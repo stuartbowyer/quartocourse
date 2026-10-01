@@ -48,7 +48,8 @@ title and a notebooks directory are required.
 | `[output]` | `slides` and `notes` directories |
 | `[brand]` | `font` (CSS stack), `pdf_font` (one Typst family), `accent`, `body_font_size`, extra `css` |
 | `[compat]` | `slide_type` — see below |
-| `[render]` | `user_agent`, a fixed `version` string, `url_rewrites` and `mounts` |
+| `[render]` | `user_agent`, a fixed `version` string, `url_rewrites`, `mounts` and `forbid` |
+| `[execute]` | run notebooks at render time — see below |
 
 Omit `[brand]` and you get a neutral default deck; nothing in the package is
 branded. See [`examples/course.toml`](examples/course.toml) for every option.
@@ -58,6 +59,35 @@ by their published URL. The rewrite turns a URL prefix into a
 notebook-relative path, and the mount links the corresponding local directory
 in beside the notebook at render time — so a build can use assets that exist
 locally but are not deployed yet, and skips a network fetch for those that are.
+
+## Executing notebooks
+
+By default the saved outputs in each notebook are rendered as they are. With
+
+```toml
+[execute]
+enabled = true
+python = "../notebooks/.venv/bin/python"   # needs ipykernel; default: quartocourse's own
+```
+
+each notebook is run once at render time, its saved outputs are ignored, and
+publishing becomes opt-in per cell through tags in the cell metadata:
+
+| Tag | Slides | Notes (PDF) |
+| :-- | :-- | :-- |
+| `show` | shown | shown |
+| `show-on-click` | revealed on the next click | hidden |
+| none | hidden | hidden |
+
+A forgotten tag therefore hides an output rather than publishing it. A cell may
+raise only if it is tagged — the error is then what is shown — or if it is a
+blank exercise, a code cell containing `blank` (default `____`). Any other
+error stops the render. `timeout` (seconds per cell, default 600) is the only
+other option.
+
+`[render] forbid` takes regexes that must not appear in any published output,
+executed or not, and fails the render on a match. It reads text only, so it
+backs up the tags rather than replacing them.
 
 ## nbconvert compatibility
 

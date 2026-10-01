@@ -5,7 +5,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from quartocourse import __version__, config, render, toolchain
+from quartocourse import __version__, config, execute, render, toolchain
 
 _STARTER_CONFIG = """\
 [course]
@@ -137,7 +137,12 @@ def main(argv=None) -> int:
             return toolchain.doctor()
         if args.command == "init":
             return _cmd_init(args)
-    except (config.ConfigError, toolchain.ToolchainError, render.RenderError) as exc:
+    except (
+        config.ConfigError,
+        toolchain.ToolchainError,
+        render.RenderError,
+        execute.ExecutionError,
+    ) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     return 0

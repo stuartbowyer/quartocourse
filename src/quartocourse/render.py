@@ -2,13 +2,14 @@
 from __future__ import annotations
 
 import html
+import json
 import shutil
 import subprocess
 import tempfile
 from datetime import date
 from pathlib import Path
 
-from quartocourse import metadata, preprocess
+from quartocourse import execute, metadata, preprocess
 from quartocourse.config import Config, notebooks
 
 SLIDES = "slides"
@@ -192,9 +193,26 @@ def render_notebook(
     # populate them.
     with tempfile.TemporaryDirectory(prefix="quartocourse-") as tmp:
         work = Path(tmp)
-        staged_notebook = preprocess.prepare_notebook(
-            notebook, cfg, work / "notebook"
-        )
+        source = json.loads(notebook.read_text())
+        if cfg.execute.enabled:
+            # Run once, so the slides and the notes show the same results.
+            run_dir = work / "run"
+            preprocess.stage_mounts(cfg, run_dir)
+            print(f"   executing {notebook.name}", flush=True)
+            source = execute.execute_notebook(
+                source, cfg, run_dir, work, notebook.name
+            )
+
+        def stage(slides: bool) -> Path:
+            variant = (
+                execute.for_format(source, slides) if cfg.execute.enabled else source
+            )
+            execute.check_forbidden(variant, cfg.render.forbid, notebook.name)
+            fmt = SLIDES if slides else NOTES
+            return preprocess.prepare_notebook(
+                variant, notebook.name, cfg, work / fmt
+            )
+
         staged = metadata.stage_assets(cfg, work / "assets")
 
         if SLIDES in formats:
@@ -203,7 +221,7 @@ def render_notebook(
             )
             meta_file = metadata.write(meta, work, "slides.yml")
             _run_quarto(
-                quarto, staged_notebook, _QUARTO_FORMAT[SLIDES],
+                quarto, stage(slides=True), _QUARTO_FORMAT[SLIDES],
                 cfg.output.slides, meta_file, cfg,
             )
             outputs.append(cfg.output.slides / f"{notebook.stem}.html")
@@ -214,7 +232,7 @@ def render_notebook(
             )
             meta_file = metadata.write(meta, work, "notes.yml")
             _run_quarto(
-                quarto, staged_notebook, _QUARTO_FORMAT[NOTES],
+                quarto, stage(slides=False), _QUARTO_FORMAT[NOTES],
                 cfg.output.notes, meta_file, cfg,
             )
             outputs.append(cfg.output.notes / f"{notebook.stem}.pdf")

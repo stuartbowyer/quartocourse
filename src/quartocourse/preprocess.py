@@ -13,6 +13,7 @@ Two kinds of work happen:
 """
 from __future__ import annotations
 
+import copy
 import json
 import re
 from pathlib import Path
@@ -161,14 +162,25 @@ def _source_lines(text: str) -> list[str]:
     return text.splitlines(keepends=True)
 
 
-def prepare_notebook(notebook_path: Path, cfg: Config, dest_dir: Path) -> Path:
+def stage_mounts(cfg: Config, dest_dir: Path) -> None:
+    """Link each configured mount in beside where the notebook will sit."""
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    for name, target in cfg.render.mounts.items():
+        link = dest_dir / name
+        if not link.exists():
+            link.symlink_to(target)
+
+
+def prepare_notebook(
+    notebook: dict, filename: str, cfg: Config, dest_dir: Path
+) -> Path:
     """Write a render-ready copy of the notebook into dest_dir.
 
     The filename is preserved, because Quarto names its output from the input
     stem. dest_dir is caller-owned: the copy has to outlive every quarto call
     made against it, so this function does not manage its lifetime.
     """
-    notebook = json.loads(notebook_path.read_text())
+    notebook = copy.deepcopy(notebook)
     cells = notebook.get("cells", [])
 
     if cfg.compat.slide_type:
@@ -188,13 +200,7 @@ def prepare_notebook(notebook_path: Path, cfg: Config, dest_dir: Path) -> Path:
         if updated != original:
             cell["source"] = _source_lines(updated) if was_list else updated
 
-    dest_dir.mkdir(parents=True, exist_ok=True)
-    staged = dest_dir / notebook_path.name
+    stage_mounts(cfg, dest_dir)
+    staged = dest_dir / filename
     staged.write_text(json.dumps(notebook, indent=1, ensure_ascii=False))
-
-    for name, target in cfg.render.mounts.items():
-        link = dest_dir / name
-        if not link.exists():
-            link.symlink_to(target)
-
     return staged
