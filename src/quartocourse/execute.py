@@ -85,7 +85,13 @@ def execute_notebook(
     from nbclient.exceptions import CellExecutionError, CellTimeoutError
     from nbclient.exceptions import DeadKernelError
 
-    nb = nbformat.from_dict(copy.deepcopy(notebook))
+    nb = copy.deepcopy(notebook)
+    for index, cell in enumerate(nb.get("cells", [])):
+        # Saved notebooks store source as a list of lines; nbclient wants one
+        # string. Older notebooks also lack the cell ids nbformat now expects.
+        cell["source"] = _source(cell)
+        cell.setdefault("id", f"quartocourse-{index}")
+    nb = nbformat.from_dict(nb)
     allowed = []
     for cell in nb.cells:
         if cell.cell_type != "code":

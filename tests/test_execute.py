@@ -145,6 +145,10 @@ class TestExecuteNotebook:
         with pytest.raises(ExecutionError, match="untagged cell"):
             self._run(tmp_path, ("1 / 0", ()))
 
+    def test_accepts_list_of_lines_sources(self, tmp_path):
+        out = self._run(tmp_path, (["x = 6\n", "print(x * 7)"], [SHOW]))
+        assert out["cells"][0]["outputs"][0]["text"] == "42\n"
+
     def test_runs_in_the_given_directory(self, tmp_path):
         (tmp_path / "data.txt").write_text("hello")
         out = self._run(tmp_path, ("print(open('data.txt').read())", [SHOW]))
