@@ -61,7 +61,7 @@ forbid = []
 # _local = "../static/courses/abc101"
 
 # Optional. Run each notebook at render time and publish only outputs of cells
-# tagged `show` or `answer`. See the README.
+# tagged `show` or `predict`. See the README.
 [execute]
 enabled = false
 # Interpreter for the kernel; needs ipykernel. Defaults to quartocourse's own.

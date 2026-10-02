@@ -3,7 +3,7 @@ import pytest
 from quartocourse import config
 from quartocourse.execute import (
     SHOW,
-    ANSWER,
+    PREDICT,
     ExecutionError,
     check_forbidden,
     execute_notebook,
@@ -48,13 +48,13 @@ class TestForFormat:
         for slides in (True, False):
             assert for_format(nb, slides)["cells"][0]["outputs"]
 
-    def test_answer_is_a_fragment_in_the_slides(self):
-        cell = for_format(notebook(code("x", [ANSWER])), True)["cells"][0]
+    def test_predict_is_a_fragment_in_the_slides(self):
+        cell = for_format(notebook(code("x", [PREDICT])), True)["cells"][0]
         assert cell["outputs"]
         assert cell["source"][0] == "#| output-location: fragment\n"
 
-    def test_answer_is_hidden_in_the_notes(self):
-        cell = for_format(notebook(code("x", [ANSWER])), False)["cells"][0]
+    def test_predict_is_hidden_in_the_notes(self):
+        cell = for_format(notebook(code("x", [PREDICT])), False)["cells"][0]
         assert cell["outputs"] == []
         assert "output-location" not in "".join(cell["source"])
 

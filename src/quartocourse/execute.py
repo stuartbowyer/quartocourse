@@ -5,11 +5,11 @@ and every saved output in the source is ignored. Publishing is then opt-in, cell
 by cell, through tags in the cell metadata (invisible to students in Colab):
 
     show       output published in the slides and the notes
-    answer     output revealed on a click in the slides; hidden in the notes
+    predict    output revealed on a click in the slides; hidden in the notes
     (no tag)   output hidden in both
 
 `[execute] reveal_outputs = "click"` makes every published output in the
-slides appear on a click, `show` included. An `answer` is always on a click.
+slides appear on a click, `show` included. A `predict` output is always on a click.
 
 A cell may raise an error only if it is tagged (the error is then what is shown)
 or is a blank exercise -- a code cell containing the configured `blank` marker.
@@ -28,7 +28,8 @@ from pathlib import Path
 from quartocourse.config import Config
 
 SHOW = "show"
-ANSWER = "answer"
+# For a cell the audience predicts before seeing: its output is the answer.
+PREDICT = "predict"
 
 # nbclient's own tag: the cell may raise without stopping the run.
 _RAISES = "raises-exception"
@@ -109,7 +110,7 @@ def execute_notebook(
         if cell.cell_type != "code":
             continue
         tags = tags_of(cell)
-        if SHOW in tags or ANSWER in tags or is_blank(cell, cfg.execute.blank):
+        if SHOW in tags or PREDICT in tags or is_blank(cell, cfg.execute.blank):
             if _RAISES not in tags:
                 cell.metadata["tags"] = [*tags, _RAISES]
                 allowed.append(cell)
@@ -133,7 +134,7 @@ def execute_notebook(
     except CellExecutionError as exc:
         raise ExecutionError(
             f"{name}: an untagged cell raised an error. Fix it, or tag it "
-            f"'{SHOW}' or '{ANSWER}' if the error is meant to be shown.\n"
+            f"'{SHOW}' or '{PREDICT}' if the error is meant to be shown.\n"
             f"{exc}"
         ) from exc
     except (CellTimeoutError, DeadKernelError) as exc:
@@ -151,7 +152,7 @@ def execute_notebook(
 def for_format(notebook: dict, slides: bool, reveal_on_click: bool = False) -> dict:
     """The executed notebook as one format publishes it.
 
-    Untagged code cells lose their outputs. `answer` keeps its output in the
+    Untagged code cells lose their outputs. `predict` keeps its output in the
     slides, revealed as a fragment, and loses it in the notes. With
     `reveal_on_click`, `show` outputs are fragments in the slides too.
     """
@@ -160,11 +161,11 @@ def for_format(notebook: dict, slides: bool, reveal_on_click: bool = False) -> d
         if cell.get("cell_type") != "code":
             continue
         tags = tags_of(cell)
-        shown = SHOW in tags or (ANSWER in tags and slides)
+        shown = SHOW in tags or (PREDICT in tags and slides)
         if not shown:
             cell["outputs"] = []
             cell["execution_count"] = None
-        elif slides and (ANSWER in tags or reveal_on_click):
+        elif slides and (PREDICT in tags or reveal_on_click):
             cell["source"] = _as_lines(_FRAGMENT_OPTION + _source(cell))
     return out
 

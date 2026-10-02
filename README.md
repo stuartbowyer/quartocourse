@@ -76,7 +76,7 @@ publishing becomes opt-in per cell through tags in the cell metadata:
 | Tag | Slides | Notes (PDF) |
 | :-- | :-- | :-- |
 | `show` | shown | shown |
-| `answer` | revealed on the next click | hidden |
+| `predict` | revealed on the next click | hidden |
 | none | hidden | hidden |
 
 A forgotten tag therefore hides an output rather than publishing it. A cell may
@@ -84,7 +84,7 @@ raise only if it is tagged — the error is then what is shown — or if it is a
 blank exercise, a code cell containing `blank` (default `____`). Any other
 error stops the render. The other options are `timeout` (seconds per cell,
 default 600) and `reveal_outputs`: `"immediate"` (default) shows `show` outputs
-with their slide, `"click"` reveals them on the next click, as answers always are.
+with their slide, `"click"` reveals them on the next click, as `predict` outputs always are.
 
 `[render] forbid` takes regexes that must not appear in any published output,
 executed or not, and fails the render on a match. It reads text only, so it

@@ -99,7 +99,7 @@ class Render:
 @dataclass(frozen=True)
 class Execute:
     # Run each notebook at render time and publish only the outputs of cells
-    # tagged `show` or `answer` (see execute.py). Off renders the saved
+    # tagged `show` or `predict` (see execute.py). Off renders the saved
     # outputs as they are, and the tags are ignored.
     enabled: bool = False
     # Interpreter for the kernel; it needs ipykernel and the notebooks' own
@@ -111,7 +111,7 @@ class Execute:
     # may error, and its output is hidden unless tagged.
     blank: str = "____"
     # "immediate" shows published outputs in the slides as soon as the slide
-    # appears; "click" reveals each on the next click. Answers always wait.
+    # appears; "click" reveals each on the next click. Predicts always wait.
     reveal_outputs: str = "immediate"
 
 
