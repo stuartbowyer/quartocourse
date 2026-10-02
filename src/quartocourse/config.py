@@ -113,6 +113,10 @@ class Execute:
     # "immediate" shows published outputs in the slides as soon as the slide
     # appears; "click" reveals each on the next click. Predicts always wait.
     reveal_outputs: str = "immediate"
+    # Text replaced in code cells for the run only; the published code keeps
+    # the original. E.g. a published data URL -> a mounted local copy, or a
+    # placeholder project id -> a real one.
+    substitute: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -276,6 +280,7 @@ def load(target: Path) -> Config:
         timeout=int(execute_t.get("timeout", Execute.timeout)),
         blank=execute_t.get("blank", Execute.blank),
         reveal_outputs=execute_t.get("reveal_outputs", Execute.reveal_outputs),
+        substitute={str(k): str(v) for k, v in execute_t.get("substitute", {}).items()},
     )
     if execute.reveal_outputs not in ("immediate", "click"):
         raise ConfigError(

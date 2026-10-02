@@ -99,11 +99,16 @@ def execute_notebook(
     from nbclient.exceptions import DeadKernelError
 
     nb = copy.deepcopy(notebook)
+    published = {}
     for index, cell in enumerate(nb.get("cells", [])):
         # Saved notebooks store source as a list of lines; nbclient wants one
         # string. Older notebooks also lack the cell ids nbformat now expects.
         cell["source"] = _source(cell)
         cell.setdefault("id", f"quartocourse-{index}")
+        if cell.get("cell_type") == "code" and cfg.execute.substitute:
+            published[index] = cell["source"]
+            for old, new in cfg.execute.substitute.items():
+                cell["source"] = cell["source"].replace(old, new)
     nb = nbformat.from_dict(nb)
     allowed = []
     for cell in nb.cells:
@@ -144,8 +149,8 @@ def execute_notebook(
         for cell in allowed:
             cell.metadata["tags"].remove(_RAISES)
     out = nbformat.from_dict(nb)
-    for cell in out.cells:
-        cell.source = _as_lines(cell.source)
+    for index, cell in enumerate(out.cells):
+        cell.source = _as_lines(published.get(index, cell.source))
     return out
 
 

@@ -86,6 +86,10 @@ error stops the render. The other options are `timeout` (seconds per cell,
 default 600) and `reveal_outputs`: `"immediate"` (default) shows `show` outputs
 with their slide, `"click"` reveals them on the next click, as `predict` outputs always are.
 
+`[execute.substitute]` replaces text in code cells for the run only; the
+published code keeps the original. Use it to point a published data URL at a
+mounted local copy, or a placeholder project id at a real one.
+
 `[render] forbid` takes regexes that must not appear in any published output,
 executed or not, and fails the render on a match. It reads text only, so it
 backs up the tags rather than replacing them.

@@ -166,6 +166,24 @@ class TestExecuteNotebook:
         out = self._run(tmp_path, ("x = 1\ny = 2", ()))
         assert out["cells"][0]["source"] == ["x = 1\n", "y = 2"]
 
+    def test_substitutions_apply_to_the_run_but_not_the_published_code(
+        self, tmp_path
+    ):
+        (tmp_path / "notebooks").mkdir()
+        path = tmp_path / "course.toml"
+        path.write_text(
+            '[course]\ntitle = "T"\n\n[execute]\nenabled = true\n\n'
+            '[execute.substitute]\n"https://example.org/data/" = "data/"\n'
+        )
+        (tmp_path / "data").mkdir()
+        (tmp_path / "data" / "x.txt").write_text("local copy")
+        cfg = config.load(path)
+        src = "print(open('https://example.org/data/x.txt').read())"
+        nb = notebook(code(src, [SHOW], outputs=[]))
+        out = execute_notebook(nb, cfg, tmp_path, tmp_path, "T.ipynb")
+        assert out["cells"][0]["outputs"][0]["text"] == "local copy\n"
+        assert "".join(out["cells"][0]["source"]) == src
+
     def test_runs_in_the_given_directory(self, tmp_path):
         (tmp_path / "data.txt").write_text("hello")
         out = self._run(tmp_path, ("print(open('data.txt').read())", [SHOW]))

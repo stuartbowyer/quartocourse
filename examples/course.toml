@@ -70,3 +70,7 @@ timeout = 600
 blank = "____"
 # "click" reveals every published output on the next click in the slides.
 reveal_outputs = "immediate"
+
+# Text replaced in code cells for the run only; the slides show the original.
+# [execute.substitute]
+# "https://example.edu/courses/abc101/data/" = "data/"
