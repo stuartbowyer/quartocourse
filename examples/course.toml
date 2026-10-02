@@ -61,10 +61,12 @@ forbid = []
 # _local = "../static/courses/abc101"
 
 # Optional. Run each notebook at render time and publish only outputs of cells
-# tagged `show` or `show-on-click`. See the README.
+# tagged `show` or `answer`. See the README.
 [execute]
 enabled = false
 # Interpreter for the kernel; needs ipykernel. Defaults to quartocourse's own.
 # python = "notebooks/.venv/bin/python"
 timeout = 600
 blank = "____"
+# "click" reveals every published output on the next click in the slides.
+reveal_outputs = "immediate"

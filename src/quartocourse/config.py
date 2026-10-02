@@ -99,7 +99,7 @@ class Render:
 @dataclass(frozen=True)
 class Execute:
     # Run each notebook at render time and publish only the outputs of cells
-    # tagged `show` or `show-on-click` (see execute.py). Off renders the saved
+    # tagged `show` or `answer` (see execute.py). Off renders the saved
     # outputs as they are, and the tags are ignored.
     enabled: bool = False
     # Interpreter for the kernel; it needs ipykernel and the notebooks' own
@@ -110,6 +110,9 @@ class Execute:
     # A code cell containing this is an exercise left blank for students: it
     # may error, and its output is hidden unless tagged.
     blank: str = "____"
+    # "immediate" shows published outputs in the slides as soon as the slide
+    # appears; "click" reveals each on the next click. Answers always wait.
+    reveal_outputs: str = "immediate"
 
 
 @dataclass(frozen=True)
@@ -272,7 +275,12 @@ def load(target: Path) -> Config:
         python=python if python.is_absolute() else root / python,
         timeout=int(execute_t.get("timeout", Execute.timeout)),
         blank=execute_t.get("blank", Execute.blank),
+        reveal_outputs=execute_t.get("reveal_outputs", Execute.reveal_outputs),
     )
+    if execute.reveal_outputs not in ("immediate", "click"):
+        raise ConfigError(
+            f"{path} [execute]: reveal_outputs must be \"immediate\" or \"click\""
+        )
     if execute.enabled and not execute.python.is_file():
         raise ConfigError(
             f"{path} [execute]: python interpreter not found: {execute.python}"

@@ -4,9 +4,12 @@ When `[execute] enabled` is set, each notebook is run once on a temporary copy
 and every saved output in the source is ignored. Publishing is then opt-in, cell
 by cell, through tags in the cell metadata (invisible to students in Colab):
 
-    show            output published in the slides and the notes
-    show-on-click   output revealed on a click in the slides; hidden in the notes
-    (no tag)        output hidden in both
+    show       output published in the slides and the notes
+    answer     output revealed on a click in the slides; hidden in the notes
+    (no tag)   output hidden in both
+
+`[execute] reveal_outputs = "click"` makes every published output in the
+slides appear on a click, `show` included. An `answer` is always on a click.
 
 A cell may raise an error only if it is tagged (the error is then what is shown)
 or is a blank exercise -- a code cell containing the configured `blank` marker.
@@ -25,7 +28,7 @@ from pathlib import Path
 from quartocourse.config import Config
 
 SHOW = "show"
-SHOW_ON_CLICK = "show-on-click"
+ANSWER = "answer"
 
 # nbclient's own tag: the cell may raise without stopping the run.
 _RAISES = "raises-exception"
@@ -106,7 +109,7 @@ def execute_notebook(
         if cell.cell_type != "code":
             continue
         tags = tags_of(cell)
-        if SHOW in tags or SHOW_ON_CLICK in tags or is_blank(cell, cfg.execute.blank):
+        if SHOW in tags or ANSWER in tags or is_blank(cell, cfg.execute.blank):
             if _RAISES not in tags:
                 cell.metadata["tags"] = [*tags, _RAISES]
                 allowed.append(cell)
@@ -130,7 +133,7 @@ def execute_notebook(
     except CellExecutionError as exc:
         raise ExecutionError(
             f"{name}: an untagged cell raised an error. Fix it, or tag it "
-            f"'{SHOW}' or '{SHOW_ON_CLICK}' if the error is meant to be shown.\n"
+            f"'{SHOW}' or '{ANSWER}' if the error is meant to be shown.\n"
             f"{exc}"
         ) from exc
     except (CellTimeoutError, DeadKernelError) as exc:
@@ -145,22 +148,23 @@ def execute_notebook(
     return out
 
 
-def for_format(notebook: dict, slides: bool) -> dict:
+def for_format(notebook: dict, slides: bool, reveal_on_click: bool = False) -> dict:
     """The executed notebook as one format publishes it.
 
-    Untagged code cells lose their outputs. `show-on-click` keeps its output in
-    the slides, revealed as a fragment, and loses it in the notes.
+    Untagged code cells lose their outputs. `answer` keeps its output in the
+    slides, revealed as a fragment, and loses it in the notes. With
+    `reveal_on_click`, `show` outputs are fragments in the slides too.
     """
     out = copy.deepcopy(notebook)
     for cell in out.get("cells", []):
         if cell.get("cell_type") != "code":
             continue
         tags = tags_of(cell)
-        shown = SHOW in tags or (SHOW_ON_CLICK in tags and slides)
+        shown = SHOW in tags or (ANSWER in tags and slides)
         if not shown:
             cell["outputs"] = []
             cell["execution_count"] = None
-        elif SHOW_ON_CLICK in tags:
+        elif slides and (ANSWER in tags or reveal_on_click):
             cell["source"] = _as_lines(_FRAGMENT_OPTION + _source(cell))
     return out
 

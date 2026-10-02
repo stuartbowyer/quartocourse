@@ -99,6 +99,11 @@ class TestExecute:
         cfg = config.load(_write(tmp_path, body))
         assert cfg.execute.python == tmp_path / "venv" / "python"
 
+    def test_reveal_outputs_must_be_immediate_or_click(self, tmp_path):
+        body = MINIMAL + '\n[execute]\nreveal_outputs = "sometimes"\n'
+        with pytest.raises(config.ConfigError, match="reveal_outputs"):
+            config.load(_write(tmp_path, body))
+
     def test_invalid_forbid_pattern_is_an_error(self, tmp_path):
         body = MINIMAL + '\n[render]\nforbid = ["("]\n'
         with pytest.raises(config.ConfigError, match="forbid"):

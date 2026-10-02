@@ -205,7 +205,11 @@ def render_notebook(
 
         def stage(slides: bool) -> Path:
             variant = (
-                execute.for_format(source, slides) if cfg.execute.enabled else source
+                execute.for_format(
+                    source, slides, cfg.execute.reveal_outputs == "click"
+                )
+                if cfg.execute.enabled
+                else source
             )
             execute.check_forbidden(variant, cfg.render.forbid, notebook.name)
             fmt = SLIDES if slides else NOTES
