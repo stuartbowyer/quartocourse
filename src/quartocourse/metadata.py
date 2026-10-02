@@ -68,7 +68,9 @@ def slides_metadata(cfg: Config, staged: dict, footer_html: str) -> dict:
     }
 
 
-def notes_metadata(cfg: Config, staged: dict, notebook: Path, header: str) -> dict:
+def notes_metadata(
+    cfg: Config, staged: dict, notebook: Path, header: str, version: str = ""
+) -> dict:
     typst: dict = {
         "papersize": "a4",
         "margin": {"x": "2cm", "y": "2cm"},
@@ -91,7 +93,14 @@ def notes_metadata(cfg: Config, staged: dict, notebook: Path, header: str) -> di
     }
     if subtitle:
         meta["subtitle"] = subtitle
-    if cfg.course.author:
+    if cfg.course.author and version:
+        # The title block prints an author's affiliation on the line below the
+        # name, which puts the version where a reader checks which copy they
+        # have. `date` would be neater, but Quarto rejects non-date values.
+        meta["author"] = [
+            {"name": cfg.course.author, "affiliations": [{"name": version}]}
+        ]
+    elif cfg.course.author:
         meta["author"] = cfg.course.author
     return meta
 
