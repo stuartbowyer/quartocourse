@@ -77,12 +77,13 @@ def slides_footer(cfg: Config, notebook: Path, version: str) -> str:
     return "".join(c for c in cols if c)
 
 
-def typst_header(cfg: Config, notebook: Path) -> str:
+def typst_header(cfg: Config, notebook: Path, version: str = "") -> str:
     """Typst snippet setting the document font and the running header/footer.
 
     Header: course code/title left, lecture name right, so a reader flipping
     through knows where they are. Footer: institution and author left, page
-    number centre, Colab badge right.
+    number centre, Colab badge right. The first page's footer also carries the
+    version, so a downloaded or printed copy can be dated.
 
     Injected globally via include-in-header so every page after the TOC
     carries it. `article()` in Quarto's Typst template only overrides the
@@ -100,6 +101,17 @@ def typst_header(cfg: Config, notebook: Path) -> str:
     institution_author = " · ".join(
         p for p in (course.institution, course.author) if p
     )
+
+    footer_left = f"[{institution_author}]"
+    if version:
+        # A Typst string, not markup: the version's underscore would otherwise
+        # start emphasis.
+        quoted = json.dumps(version)
+        sep = " · " if institution_author else ""
+        footer_left = (
+            f"[{institution_author}"
+            f"#if counter(page).get().first() == 1 [{sep}#{quoted}]]"
+        )
 
     colab = cfg.colab_url(notebook.name)
     # A text link rather than the Colab badge image: Typst's image() reads
@@ -124,7 +136,7 @@ def typst_header(cfg: Config, notebook: Path) -> str:
         "    #grid(\n"
         "      columns: (1fr, auto, 1fr),\n"
         "      align: (left + horizon, center + horizon, right + horizon),\n"
-        f"      [{institution_author}],\n"
+        f"      {footer_left},\n"
         "      [#counter(page).display()],\n"
         f"      {badge},\n"
         "    )\n"
@@ -232,7 +244,7 @@ def render_notebook(
 
         if NOTES in formats:
             meta = metadata.notes_metadata(
-                cfg, staged, notebook, typst_header(cfg, notebook)
+                cfg, staged, notebook, typst_header(cfg, notebook, version)
             )
             meta_file = metadata.write(meta, work, "notes.yml")
             _run_quarto(
