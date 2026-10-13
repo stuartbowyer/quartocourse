@@ -3,6 +3,7 @@ import pytest
 from quartocourse import config
 from quartocourse.execute import (
     COLUMN,
+    REMOVE_INPUT,
     SHOW,
     PREDICT,
     ExecutionError,
@@ -116,6 +117,18 @@ class TestForFormat:
     def test_column_is_ignored_in_the_notes(self):
         cell = for_format(notebook(code("x", [SHOW, COLUMN])), False)["cells"][0]
         assert "".join(cell["source"]) == "x"
+
+    def test_remove_input_publishes_the_output_without_the_code(self):
+        for slides in (True, False):
+            cell = for_format(notebook(code("x", [SHOW, REMOVE_INPUT])), slides)
+            source = "".join(cell["cells"][0]["source"])
+            assert "#| echo: false\n" in source
+            assert cell["cells"][0]["outputs"]
+
+    def test_remove_input_replaces_the_location_option(self):
+        for tags in ([PREDICT, REMOVE_INPUT], [SHOW, COLUMN, REMOVE_INPUT]):
+            cell = for_format(notebook(code("x", tags)), True, True)["cells"][0]
+            assert "".join(cell["source"]) == "#| echo: false\nx"
 
     def test_markdown_is_untouched(self):
         md = {"cell_type": "markdown", "metadata": {}, "source": "# Hi"}

@@ -78,6 +78,7 @@ publishing becomes opt-in per cell through tags in the cell metadata:
 | `show` | shown | shown |
 | `predict` | revealed on the next click | hidden |
 | `column` (with one of the above) | beside the code | no effect |
+| `remove-input` (with one of the above) | without the code | without the code |
 | none | hidden | hidden |
 
 A forgotten tag therefore hides an output rather than publishing it. A cell may
@@ -86,6 +87,8 @@ blank exercise, a code cell containing `blank` (default `____`). Any other
 error stops the render. The other options are `timeout` (seconds per cell,
 default 600) and `reveal_outputs`: `"immediate"` (default) shows `show` outputs
 with their slide, `"click"` reveals them on the next click, as `predict` outputs always are.
+A `remove-input` output appears with its slide, never on a click: Quarto's
+`output-location` needs the code echoed.
 A published error is its final line only, `TypeError: ...`, never the traceback:
 an error raised inside a library runs to dozens of frames and names files on the
 machine that rendered.
@@ -125,6 +128,11 @@ expressed in the markdown Quarto documents:
 Headings are left alone. Promoting an `###` to `##` would also break the
 slide, but it would flatten the document's real structure — and that
 structure is what the PDF's outline and contents are built from.
+
+The `remove-input` cell tag is honoured for the same reason: it is what
+nbconvert's tag preprocessor reads to publish an output without its code, so
+notebooks tagged for it carry over. Quarto itself ignores cell tags; see
+[Executing notebooks](#executing-notebooks) for the tags quartocourse reads.
 
 This is on by default and is a no-op for notebooks that carry no slideshow
 metadata. Turn it off with:

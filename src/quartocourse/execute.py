@@ -7,6 +7,7 @@ by cell, through tags in the cell metadata (invisible to students in Colab):
     show       output published in the slides and the notes
     predict    output revealed on a click in the slides; hidden in the notes
     column     output beside the code in the slides, with either of the above
+    remove-input  output without the code, with either of the above
     (no tag)   output hidden in both
 
 `[execute] reveal_outputs = "click"` makes every published output in the
@@ -33,6 +34,9 @@ SHOW = "show"
 PREDICT = "predict"
 # Output beside the code in the slides, e.g. a plot next to the lines that drew it.
 COLUMN = "column"
+# Output without the code, e.g. a figure whose construction is beside the point.
+# nbconvert's name for the same thing, so notebooks tagged for it carry over.
+REMOVE_INPUT = "remove-input"
 
 # nbclient's own tag: the cell may raise without stopping the run.
 _RAISES = "raises-exception"
@@ -40,6 +44,7 @@ _RAISES = "raises-exception"
 # column beside the code, or both. It needs the cell's code echoed, which
 # metadata.py sets for every render.
 _LOCATION_OPTION = "#| output-location: {}\n"
+_REMOVE_INPUT_OPTION = "#| echo: false\n"
 _KERNEL_NAME = "quartocourse"
 
 
@@ -165,6 +170,9 @@ def for_format(notebook: dict, slides: bool, reveal_on_click: bool = False) -> d
     slides, revealed as a fragment, and loses it in the notes. With
     `reveal_on_click`, `show` outputs are fragments in the slides too. `column`
     puts the output beside the code in the slides; the notes ignore it.
+    `remove-input` publishes the output without the code, in both; Quarto then
+    ignores `output-location`, so the output appears with its slide, not on a
+    click.
 
     A published error is its final line only, `TypeError: ...`. The traceback
     is dropped: for an error raised inside a library it runs to dozens of
@@ -183,14 +191,18 @@ def for_format(notebook: dict, slides: bool, reveal_on_click: bool = False) -> d
         for output in cell.get("outputs", []):
             if output.get("output_type") == "error":
                 output["traceback"] = [_error_line(output)]
-        if slides:
+        options = ""
+        if REMOVE_INPUT in tags:
+            # Quarto rejects output-location on a cell that does not echo.
+            options = _REMOVE_INPUT_OPTION
+        elif slides:
             location = _output_location(
                 fragment=PREDICT in tags or reveal_on_click, column=COLUMN in tags
             )
             if location:
-                cell["source"] = _as_lines(
-                    _LOCATION_OPTION.format(location) + _source(cell)
-                )
+                options = _LOCATION_OPTION.format(location)
+        if options:
+            cell["source"] = _as_lines(options + _source(cell))
     return out
 
 
