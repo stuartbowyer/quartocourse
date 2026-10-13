@@ -160,6 +160,10 @@ def for_format(notebook: dict, slides: bool, reveal_on_click: bool = False) -> d
     Untagged code cells lose their outputs. `predict` keeps its output in the
     slides, revealed as a fragment, and loses it in the notes. With
     `reveal_on_click`, `show` outputs are fragments in the slides too.
+
+    A published error is its final line only, `TypeError: ...`. The traceback
+    is dropped: for an error raised inside a library it runs to dozens of
+    frames and names files on the rendering machine.
     """
     out = copy.deepcopy(notebook)
     for cell in out.get("cells", []):
@@ -170,9 +174,20 @@ def for_format(notebook: dict, slides: bool, reveal_on_click: bool = False) -> d
         if not shown:
             cell["outputs"] = []
             cell["execution_count"] = None
-        elif slides and (PREDICT in tags or reveal_on_click):
+            continue
+        for output in cell.get("outputs", []):
+            if output.get("output_type") == "error":
+                output["traceback"] = [_error_line(output)]
+        if slides and (PREDICT in tags or reveal_on_click):
             cell["source"] = _as_lines(_FRAGMENT_OPTION + _source(cell))
     return out
+
+
+def _error_line(output: dict) -> str:
+    """`ename: evalue`, as the last line of a Python traceback reads."""
+    name = output.get("ename", "") or "Error"
+    value = output.get("evalue", "")
+    return f"{name}: {value}" if value else name
 
 
 def _published_text(cell: dict) -> str:

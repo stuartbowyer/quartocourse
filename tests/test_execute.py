@@ -71,6 +71,29 @@ class TestForFormat:
         assert cell["outputs"]
         assert "output-location" not in "".join(cell["source"])
 
+    def test_published_error_is_its_final_line_only(self):
+        error = {
+            "output_type": "error",
+            "ename": "TypeError",
+            "evalue": "Cannot perform reduction 'mean' with string dtype",
+            "traceback": [
+                "Traceback (most recent call last)",
+                "File ~/Code/site/.venv/lib/python3.12/site-packages/pandas/core/series.py:8113",
+                "TypeError: Cannot perform reduction 'mean' with string dtype",
+            ],
+        }
+        for tags in ([SHOW], [PREDICT]):
+            cell = for_format(notebook(code("x.mean()", tags, [error])), True)["cells"][0]
+            assert cell["outputs"][0]["traceback"] == [
+                "TypeError: Cannot perform reduction 'mean' with string dtype"
+            ]
+            assert cell["outputs"][0]["ename"] == "TypeError"
+
+    def test_error_without_a_value_publishes_the_name(self):
+        error = {"output_type": "error", "ename": "KeyboardInterrupt", "evalue": "", "traceback": ["x"]}
+        cell = for_format(notebook(code("x", [SHOW], [error])), True)["cells"][0]
+        assert cell["outputs"][0]["traceback"] == ["KeyboardInterrupt"]
+
     def test_markdown_is_untouched(self):
         md = {"cell_type": "markdown", "metadata": {}, "source": "# Hi"}
         assert for_format(notebook(md), True)["cells"][0] == md

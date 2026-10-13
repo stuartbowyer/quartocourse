@@ -85,6 +85,9 @@ blank exercise, a code cell containing `blank` (default `____`). Any other
 error stops the render. The other options are `timeout` (seconds per cell,
 default 600) and `reveal_outputs`: `"immediate"` (default) shows `show` outputs
 with their slide, `"click"` reveals them on the next click, as `predict` outputs always are.
+A published error is its final line only, `TypeError: ...`, never the traceback:
+an error raised inside a library runs to dozens of frames and names files on the
+machine that rendered.
 
 `[execute.substitute]` replaces text in code cells for the run only; the
 published code keeps the original. Use it to point a published data URL at a
