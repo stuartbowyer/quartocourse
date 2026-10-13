@@ -2,6 +2,7 @@ import pytest
 
 from quartocourse import config
 from quartocourse.execute import (
+    COLUMN,
     SHOW,
     PREDICT,
     ExecutionError,
@@ -78,21 +79,43 @@ class TestForFormat:
             "evalue": "Cannot perform reduction 'mean' with string dtype",
             "traceback": [
                 "Traceback (most recent call last)",
-                "File ~/Code/site/.venv/lib/python3.12/site-packages/pandas/core/series.py:8113",
+                "File ~/Code/site/.venv/lib/python3.12/site-packages/pandas/"
+                "core/series.py:8113",
                 "TypeError: Cannot perform reduction 'mean' with string dtype",
             ],
         }
         for tags in ([SHOW], [PREDICT]):
-            cell = for_format(notebook(code("x.mean()", tags, [error])), True)["cells"][0]
+            nb = notebook(code("x.mean()", tags, [error]))
+            cell = for_format(nb, True)["cells"][0]
             assert cell["outputs"][0]["traceback"] == [
                 "TypeError: Cannot perform reduction 'mean' with string dtype"
             ]
             assert cell["outputs"][0]["ename"] == "TypeError"
 
     def test_error_without_a_value_publishes_the_name(self):
-        error = {"output_type": "error", "ename": "KeyboardInterrupt", "evalue": "", "traceback": ["x"]}
+        error = {
+            "output_type": "error",
+            "ename": "KeyboardInterrupt",
+            "evalue": "",
+            "traceback": ["x"],
+        }
         cell = for_format(notebook(code("x", [SHOW], [error])), True)["cells"][0]
         assert cell["outputs"][0]["traceback"] == ["KeyboardInterrupt"]
+
+    def test_column_puts_the_output_beside_the_code_in_the_slides(self):
+        cell = for_format(notebook(code("x", [SHOW, COLUMN])), True)["cells"][0]
+        assert "".join(cell["source"]).startswith("#| output-location: column\n")
+
+    def test_column_combines_with_a_click(self):
+        for tags, reveal in (([SHOW, COLUMN], True), ([PREDICT, COLUMN], False)):
+            cell = for_format(notebook(code("x", tags)), True, reveal)["cells"][0]
+            assert "".join(cell["source"]).startswith(
+                "#| output-location: column-fragment\n"
+            )
+
+    def test_column_is_ignored_in_the_notes(self):
+        cell = for_format(notebook(code("x", [SHOW, COLUMN])), False)["cells"][0]
+        assert "".join(cell["source"]) == "x"
 
     def test_markdown_is_untouched(self):
         md = {"cell_type": "markdown", "metadata": {}, "source": "# Hi"}

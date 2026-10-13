@@ -6,6 +6,7 @@ by cell, through tags in the cell metadata (invisible to students in Colab):
 
     show       output published in the slides and the notes
     predict    output revealed on a click in the slides; hidden in the notes
+    column     output beside the code in the slides, with either of the above
     (no tag)   output hidden in both
 
 `[execute] reveal_outputs = "click"` makes every published output in the
@@ -30,12 +31,15 @@ from quartocourse.config import Config
 SHOW = "show"
 # For a cell the audience predicts before seeing: its output is the answer.
 PREDICT = "predict"
+# Output beside the code in the slides, e.g. a plot next to the lines that drew it.
+COLUMN = "column"
 
 # nbclient's own tag: the cell may raise without stopping the run.
 _RAISES = "raises-exception"
-# Quarto's option for revealing a cell's output as the next fragment. It needs
-# the cell's code echoed, which metadata.py sets for every render.
-_FRAGMENT_OPTION = "#| output-location: fragment\n"
+# Quarto's option for where a cell's output goes: as the next fragment, in a
+# column beside the code, or both. It needs the cell's code echoed, which
+# metadata.py sets for every render.
+_LOCATION_OPTION = "#| output-location: {}\n"
 _KERNEL_NAME = "quartocourse"
 
 
@@ -159,7 +163,8 @@ def for_format(notebook: dict, slides: bool, reveal_on_click: bool = False) -> d
 
     Untagged code cells lose their outputs. `predict` keeps its output in the
     slides, revealed as a fragment, and loses it in the notes. With
-    `reveal_on_click`, `show` outputs are fragments in the slides too.
+    `reveal_on_click`, `show` outputs are fragments in the slides too. `column`
+    puts the output beside the code in the slides; the notes ignore it.
 
     A published error is its final line only, `TypeError: ...`. The traceback
     is dropped: for an error raised inside a library it runs to dozens of
@@ -178,9 +183,25 @@ def for_format(notebook: dict, slides: bool, reveal_on_click: bool = False) -> d
         for output in cell.get("outputs", []):
             if output.get("output_type") == "error":
                 output["traceback"] = [_error_line(output)]
-        if slides and (PREDICT in tags or reveal_on_click):
-            cell["source"] = _as_lines(_FRAGMENT_OPTION + _source(cell))
+        if slides:
+            location = _output_location(
+                fragment=PREDICT in tags or reveal_on_click, column=COLUMN in tags
+            )
+            if location:
+                cell["source"] = _as_lines(
+                    _LOCATION_OPTION.format(location) + _source(cell)
+                )
     return out
+
+
+def _output_location(fragment: bool, column: bool) -> str | None:
+    if fragment and column:
+        return "column-fragment"
+    if fragment:
+        return "fragment"
+    if column:
+        return "column"
+    return None
 
 
 def _error_line(output: dict) -> str:

@@ -77,6 +77,7 @@ publishing becomes opt-in per cell through tags in the cell metadata:
 | :-- | :-- | :-- |
 | `show` | shown | shown |
 | `predict` | revealed on the next click | hidden |
+| `column` (with one of the above) | beside the code | no effect |
 | none | hidden | hidden |
 
 A forgotten tag therefore hides an output rather than publishing it. A cell may
